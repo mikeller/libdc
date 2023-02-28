@@ -416,13 +416,13 @@ hw_ostc3_transfer (hw_ostc3_device_t *device,
 		unsigned char answer[1] = {0};
 		status = hw_ostc3_read (device, NULL, answer, sizeof (answer));
 		if (status != DC_STATUS_SUCCESS) {
-			ERROR (abstract->context, "Failed to receive the ready byte.");
+			ERROR (abstract->context, "Failed to receive the ready byte. cmd: %X, status %X, answer %X", cmd, status, answer);
 			return status;
 		}
 
 		// Verify the ready byte.
 		if (answer[0] != ready) {
-			ERROR (abstract->context, "Unexpected ready byte.");
+			ERROR (abstract->context, "Unexpected ready byte. cmd: %X, status %X, answer %X", cmd, status, answer);
 			return DC_STATUS_PROTOCOL;
 		}
 	}
@@ -1573,6 +1573,8 @@ hw_ostc3_device_fwupdate4 (dc_device_t *abstract, const char *filename)
 			ERROR (abstract->context, "Failed to read the firmware info.");
 			goto error;
 		}
+
+		ERROR(abstract->context, "type: %X, firmware fwinfo: %X %X %X %X, device fwinfo: %X %X %X %X", type, data[offset + 12], data[offset + 13], data[offset + 14], data[offset + 15], fwinfo[0], fwinfo[1], fwinfo[2], fwinfo[3]);
 
 		// Upload the firmware blob.
 		// The update is skipped if the two versions are already

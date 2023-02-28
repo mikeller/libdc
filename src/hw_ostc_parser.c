@@ -920,6 +920,10 @@ hw_ostc_parser_samples_foreach (dc_parser_t *abstract, dc_sample_callback_t call
 	unsigned int tank = parser->initial != UNDEFINED ? parser->initial : 0;
 
 	unsigned int offset = header;
+
+	unsigned int previous_length = 0;
+	int previous_type = UINT_MAX;
+	unsigned int previous_offset = 0;
 	if (version == 0x23 || version == 0x24)
 		offset += 5 + 3 * nconfig;
 	while (offset + 3 <= size) {
@@ -1106,7 +1110,17 @@ hw_ostc_parser_samples_foreach (dc_parser_t *abstract, dc_sample_callback_t call
 
 		// Extended sample info.
 		for (unsigned int i = 0; i < nconfig; ++i) {
-			if (info[i].divisor && (nsamples % info[i].divisor) == 0) {
+			if ((info[i].divisor && (nsamples % info[i].divisor) == 0) || (info[i].type >= previous_type && info[i].divisor && ((nsamples -1) % info[i].divisor) == 0)) {
+				if (previous_length) {
+					memcpy(&data[offset - previous_length], &data[previous_offset], previous_length);
+					offset = offset - previous_length;
+					length = length + previous_length;
+					previous_length = 0;
+				}
+				if (!length) {
+					previous_type = UINT_MAX;
+				}
+
 				if (length < info[i].size) {
 					// Due to a bug in the hwOS Tech firmware v3.03 to v3.08, and
 					// the hwOS Sport firmware v10.57 to v10.63, the ppO2 divisor
@@ -1119,8 +1133,14 @@ hw_ostc_parser_samples_foreach (dc_parser_t *abstract, dc_sample_callback_t call
 						info[i].divisor = 0;
 						continue;
 					}
-					ERROR (abstract->context, "Buffer overflow detected!");
-					return DC_STATUS_DATAFORMAT;
+					ERROR (abstract->context, "Buffer overflow detected! nconfig: %d, nsamples: %d, i: %d, length: %d, type: %X, size: %d, divisor: %d", nconfig, nsamples, i, length, info[i].type, info[i].size, info[i].divisor);
+					//return DC_STATUS_DATAFORMAT;
+
+					previous_type = info[i].type;
+					previous_length = length;
+					previous_offset = offset;
+
+					break;
 				}
 
 				unsigned int ppo2[3] = {0};
