@@ -358,7 +358,7 @@ mares_iconhd_packet_variable (mares_iconhd_device_t *device,
 	}
 
 	// Verify the trailer byte.
-	if (packet[length - 1] != END) {
+	if (packet[length - 1] != EOF) {
 		ERROR (abstract->context, "Unexpected packet trailer byte (%02x).", packet[length - 1]);
 		return DC_STATUS_PROTOCOL;
 	}
