@@ -1,7 +1,7 @@
 /*
  * libdivecomputer
  *
- * Copyright (C) 2019 Jef Driesen
+ * Copyright (C) 2023 Janice McLaughlin
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,36 +19,22 @@
  * MA 02110-1301 USA
  */
 
-#ifndef DC_BLE_H
-#define DC_BLE_H
+#ifndef PELAGIC_I330R_H
+#define PELAGIC_I330R_H
 
-#include "ioctl.h"
+#include <libdivecomputer/context.h>
+#include <libdivecomputer/iostream.h>
+#include <libdivecomputer/device.h>
+#include <libdivecomputer/parser.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-/**
- * Get the remote device name.
- */
-#define DC_IOCTL_BLE_GET_NAME   DC_IOCTL_IOR('b', 0, DC_IOCTL_SIZE_VARIABLE)
-
-/**
- * Get the bluetooth authentication PIN code.
- *
- * The data format is a NULL terminated string.
- */
-#define DC_IOCTL_BLE_GET_PINCODE   DC_IOCTL_IOR('b', 1, DC_IOCTL_SIZE_VARIABLE)
-
-/**
- * Get/set the bluetooth authentication access code.
- *
- * The data format is a variable sized byte array.
- */
-#define DC_IOCTL_BLE_GET_ACCESSCODE   DC_IOCTL_IOR('b', 2, DC_IOCTL_SIZE_VARIABLE)
-#define DC_IOCTL_BLE_SET_ACCESSCODE   DC_IOCTL_IOW('b', 2, DC_IOCTL_SIZE_VARIABLE)
+dc_status_t
+pelagic_i330r_device_open (dc_device_t **device, dc_context_t *context, dc_iostream_t *iostream, unsigned int model);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-#endif /* DC_BLE_H */
+#endif /* PELAGIC_I330R_H */

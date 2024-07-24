@@ -67,12 +67,12 @@
 #define RB_LOGBOOK_BEGIN         (1 * PAGESIZE)
 #define RB_LOGBOOK_END           (25 * PAGESIZE)
 #define RB_LOGBOOK_SIZE          (RB_LOGBOOK_END - RB_LOGBOOK_BEGIN)
-#define RB_LOGBOOK_DISTANCE(a,b) ringbuffer_distance (a, b, 1, RB_LOGBOOK_BEGIN, RB_LOGBOOK_END)
+#define RB_LOGBOOK_DISTANCE(a,b) ringbuffer_distance (a, b, DC_RINGBUFFER_FULL, RB_LOGBOOK_BEGIN, RB_LOGBOOK_END)
 
 #define RB_PROFILE_BEGIN         (25 * PAGESIZE)
 #define RB_PROFILE_END           (500 * PAGESIZE)
 #define RB_PROFILE_SIZE          (RB_PROFILE_END - RB_PROFILE_BEGIN)
-#define RB_PROFILE_DISTANCE(a,b) ringbuffer_distance (a, b, 1, RB_PROFILE_BEGIN, RB_PROFILE_END)
+#define RB_PROFILE_DISTANCE(a,b) ringbuffer_distance (a, b, DC_RINGBUFFER_FULL, RB_PROFILE_BEGIN, RB_PROFILE_END)
 
 #define SZ_HEADER_XEN   80
 #define SZ_HEADER_OTHER 96
@@ -469,7 +469,7 @@ liquivision_lynx_device_foreach (dc_device_t *abstract, dc_dive_callback_t callb
 
 	// Create the ringbuffer stream.
 	dc_rbstream_t *rblogbook = NULL;
-	status = dc_rbstream_new (&rblogbook, abstract, SEGMENTSIZE, SEGMENTSIZE, RB_LOGBOOK_BEGIN, RB_LOGBOOK_END, rb_logbook_end);
+	status = dc_rbstream_new (&rblogbook, abstract, SEGMENTSIZE, SEGMENTSIZE, RB_LOGBOOK_BEGIN, RB_LOGBOOK_END, rb_logbook_end, DC_RBSTREAM_BACKWARD);
 	if (status != DC_STATUS_SUCCESS) {
 		ERROR (abstract->context, "Failed to create the ringbuffer stream.");
 		goto error_free_logbook;
@@ -600,7 +600,7 @@ liquivision_lynx_device_foreach (dc_device_t *abstract, dc_dive_callback_t callb
 
 	// Create the ringbuffer stream.
 	dc_rbstream_t *rbprofile = NULL;
-	status = dc_rbstream_new (&rbprofile, abstract, SEGMENTSIZE, SEGMENTSIZE, RB_PROFILE_BEGIN, RB_PROFILE_END, rb_profile_end);
+	status = dc_rbstream_new (&rbprofile, abstract, SEGMENTSIZE, SEGMENTSIZE, RB_PROFILE_BEGIN, RB_PROFILE_END, rb_profile_end, DC_RBSTREAM_BACKWARD);
 	if (status != DC_STATUS_SUCCESS) {
 		ERROR (abstract->context, "Failed to create the ringbuffer stream.");
 		goto error_free_profile;

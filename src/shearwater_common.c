@@ -748,6 +748,9 @@ dc_status_t shearwater_common_get_model(shearwater_common_device_t *device, unsi
 	case 0x1512:
 		*model = PEREGRINE;
 		break;
+	case 0x1712:
+		model = PEREGRINE_TX;
+		break;
 	case 0xC0E0:
 		*model = TERN;
 		break;

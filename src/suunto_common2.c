@@ -297,7 +297,7 @@ suunto_common2_device_foreach (dc_device_t *abstract, dc_dive_callback_t callbac
 		ERROR (abstract->context, "Invalid ringbuffer pointer detected (0x%04x 0x%04x 0x%04x %u).", begin, last, end, count);
 		remaining = layout->rb_profile_end - layout->rb_profile_begin;
 	} else {
-		remaining = RB_PROFILE_DISTANCE (layout, begin, end, count != 0);
+		remaining = RB_PROFILE_DISTANCE (layout, begin, end, count ? DC_RINGBUFFER_FULL : DC_RINGBUFFER_EMPTY);
 	}
 
 	// Update and emit a progress event.
@@ -307,7 +307,7 @@ suunto_common2_device_foreach (dc_device_t *abstract, dc_dive_callback_t callbac
 
 	// Create the ringbuffer stream.
 	dc_rbstream_t *rbstream = NULL;
-	rc = dc_rbstream_new (&rbstream, abstract, 1, SZ_PACKET, layout->rb_profile_begin, layout->rb_profile_end, end);
+	rc = dc_rbstream_new (&rbstream, abstract, 1, SZ_PACKET, layout->rb_profile_begin, layout->rb_profile_end, end, DC_RBSTREAM_BACKWARD);
 	if (rc != DC_STATUS_SUCCESS) {
 		ERROR (abstract->context, "Failed to create the ringbuffer stream.");
 		return rc;
@@ -328,7 +328,7 @@ suunto_common2_device_foreach (dc_device_t *abstract, dc_dive_callback_t callbac
 	unsigned int offset = remaining;
 	while (offset) {
 		// Calculate the size of the current dive.
-		unsigned int size = RB_PROFILE_DISTANCE (layout, current, previous, 1);
+		unsigned int size = RB_PROFILE_DISTANCE (layout, current, previous, DC_RINGBUFFER_FULL);
 
 		if (size < 4 || size > offset) {
 			ERROR (abstract->context, "Unexpected profile size (%u %u).", size, offset);
