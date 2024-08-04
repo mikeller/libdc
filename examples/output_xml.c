@@ -489,7 +489,27 @@ dctool_xml_output_write (dctool_output_t *abstract, dc_parser_t *parser, const u
 			break;
 		fprintf (output->ostream, "<extradata key='%s' value='%s' />\n",
 			str.desc, str.value);
+	}
 
+	// Parse the GPS location.
+	message ("Parsing the GPS location.\n");
+	dc_location_t location = {0};
+	status = dc_parser_get_field (parser, DC_FIELD_LOCATION, 0, &location);
+	if (status != DC_STATUS_SUCCESS && status != DC_STATUS_UNSUPPORTED) {
+		ERROR ("Error parsing the GPS location.");
+		goto cleanup;
+	}
+
+	if (status != DC_STATUS_UNSUPPORTED) {
+		fprintf (output->ostream,
+			"<location>\n"
+			"   <latitude>%.6f<latitude>\n"
+			"   <longitude>%.6f</longitude>\n"
+			"   <altitude>%.2f<altitude>\n"
+			"</location>\n",
+			location.latitude,
+			location.longitude,
+			convert_depth(location.altitude, output->units));
 	}
 
 	// Parse the sample data.

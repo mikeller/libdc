@@ -69,6 +69,7 @@ typedef enum dc_field_type_t {
 	DC_FIELD_DIVEMODE,
 	DC_FIELD_DECOMODEL,
 	DC_FIELD_STRING,
+	DC_FIELD_LOCATION,
 } dc_field_type_t;
 
 // Make it easy to test support compile-time with "#ifdef DC_FIELD_STRING"
@@ -278,6 +279,18 @@ typedef struct dc_field_string_t {
 	const char *desc;
 	const char *value;
 } dc_field_string_t;
+
+/*
+ * GPS Location
+ *
+ * The latitude and longitude are in decimal degrees, and the (optional)
+ * altitude in meters.
+ */
+typedef struct dc_location_t {
+	double latitude;
+	double longitude;
+	double altitude;
+} dc_location_t;
 
 typedef union dc_sample_value_t {
 	unsigned int time; /* Milliseconds */

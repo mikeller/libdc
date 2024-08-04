@@ -603,7 +603,7 @@ cochran_commander_profile_size(cochran_commander_device_t *device, cochran_data_
 		// Corrupt dive, guess the end address
 		sample_end_address = cochran_commander_guess_sample_end_address(device, data, dive_num);
 
-	return ringbuffer_distance(sample_start_address, sample_end_address, 0, device->layout->rb_profile_begin, device->layout->rb_profile_end);
+	return ringbuffer_distance(sample_start_address, sample_end_address, DC_RINGBUFFER_EMPTY, device->layout->rb_profile_begin, device->layout->rb_profile_end);
 }
 
 
@@ -965,7 +965,7 @@ cochran_commander_device_foreach (dc_device_t *abstract, dc_dive_callback_t call
 		last_start_address = base + array_uint32_le(data.config + layout->cf_last_log );
 
 	// Create the ringbuffer stream.
-	status = dc_rbstream_new (&rbstream, abstract, 1, layout->rbstream_size, layout->rb_profile_begin, layout->rb_profile_end, last_start_address);
+	status = dc_rbstream_new (&rbstream, abstract, 1, layout->rbstream_size, layout->rb_profile_begin, layout->rb_profile_end, last_start_address, DC_RBSTREAM_BACKWARD);
 	if (status != DC_STATUS_SUCCESS) {
 		ERROR (abstract->context, "Failed to create the ringbuffer stream.");
 		goto error;

@@ -80,7 +80,7 @@
 #define VARIABLE 1
 
 #define ACK 0xAA
-#define EOF 0xEA
+#define END 0xEA
 #define XOR 0xA5
 
 #define CMD_VERSION   0xC2
@@ -230,7 +230,7 @@ mares_iconhd_packet_fixed (mares_iconhd_device_t *device,
 	};
 	status = dc_iostream_write (device->iostream, command, sizeof(command), NULL);
 	if (status != DC_STATUS_SUCCESS) {
-		ERROR (abstract->context, "Failed to send the command.");
+		ERROR (abstract->context, "Failed to send the command header.");
 		return status;
 	}
 
@@ -238,7 +238,7 @@ mares_iconhd_packet_fixed (mares_iconhd_device_t *device,
 	if (size && transport == DC_TRANSPORT_BLE) {
 		status = dc_iostream_write (device->iostream, data, size, NULL);
 		if (status != DC_STATUS_SUCCESS) {
-			ERROR (abstract->context, "Failed to send the command.");
+			ERROR (abstract->context, "Failed to send the command data.");
 			return status;
 		}
 	}
@@ -247,13 +247,13 @@ mares_iconhd_packet_fixed (mares_iconhd_device_t *device,
 	unsigned char header[1] = {0};
 	status = dc_iostream_read (device->iostream, header, sizeof (header), NULL);
 	if (status != DC_STATUS_SUCCESS) {
-		ERROR (abstract->context, "Failed to receive the answer.");
+		ERROR (abstract->context, "Failed to receive the packet header.");
 		return status;
 	}
 
 	// Verify the header byte.
 	if (header[0] != ACK) {
-		ERROR (abstract->context, "Unexpected answer byte.");
+		ERROR (abstract->context, "Unexpected packet header byte (%02x).", header[0]);
 		return DC_STATUS_PROTOCOL;
 	}
 
@@ -269,7 +269,7 @@ mares_iconhd_packet_fixed (mares_iconhd_device_t *device,
 	// Read the packet.
 	status = dc_iostream_read (device->iostream, answer, asize, NULL);
 	if (status != DC_STATUS_SUCCESS) {
-		ERROR (abstract->context, "Failed to receive the answer.");
+		ERROR (abstract->context, "Failed to receive the packet data.");
 		return status;
 	}
 
@@ -277,13 +277,13 @@ mares_iconhd_packet_fixed (mares_iconhd_device_t *device,
 	unsigned char trailer[1] = {0};
 	status = dc_iostream_read (device->iostream, trailer, sizeof (trailer), NULL);
 	if (status != DC_STATUS_SUCCESS) {
-		ERROR (abstract->context, "Failed to receive the answer.");
+		ERROR (abstract->context, "Failed to receive the packet trailer.");
 		return status;
 	}
 
 	// Verify the trailer byte.
-	if (trailer[0] != EOF) {
-		ERROR (abstract->context, "Unexpected answer byte.");
+	if (trailer[0] != END) {
+		ERROR (abstract->context, "Unexpected packet trailer byte (%02x).", trailer[0]);
 		return DC_STATUS_PROTOCOL;
 	}
 
@@ -358,7 +358,7 @@ mares_iconhd_packet_variable (mares_iconhd_device_t *device,
 	}
 
 	// Verify the trailer byte.
-	if (packet[length - 1] != EOF) {
+	if (packet[length - 1] != END) {
 		ERROR (abstract->context, "Unexpected packet trailer byte (%02x).", packet[length - 1]);
 		return DC_STATUS_PROTOCOL;
 	}
@@ -876,7 +876,7 @@ mares_iconhd_device_foreach_raw (dc_device_t *abstract, dc_dive_callback_t callb
 
 	// Create the ringbuffer stream.
 	dc_rbstream_t *rbstream = NULL;
-	rc = dc_rbstream_new (&rbstream, abstract, 1, device->packetsize, layout->rb_profile_begin, layout->rb_profile_end, eop);
+	rc = dc_rbstream_new (&rbstream, abstract, 1, device->packetsize, layout->rb_profile_begin, layout->rb_profile_end, eop, DC_RBSTREAM_BACKWARD);
 	if (rc != DC_STATUS_SUCCESS) {
 		ERROR (abstract->context, "Failed to create the ringbuffer stream.");
 		return rc;
