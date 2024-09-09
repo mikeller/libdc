@@ -276,8 +276,11 @@ static const dc_descriptor_t g_descriptors[] = {
 	{"Aqualung", "i200Cv2",             DC_FAMILY_OCEANIC_ATOM2, 0x4749, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
 	{"Oceanic",  "Geo Air",             DC_FAMILY_OCEANIC_ATOM2, 0x474B, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
 	/* Pelagic I330R */
-	{"Apeks",    "DSX",                 DC_FAMILY_PELAGIC_I330R, 0x4741, DC_TRANSPORT_BLE, dc_filter_oceanic},
-	{"Aqualung", "i330R",               DC_FAMILY_PELAGIC_I330R, 0x4744, DC_TRANSPORT_BLE, dc_filter_oceanic},
+	// The pairing sequence for these was intentionally broken by Pelagic Pressure Systems
+	// so they won't work without a custom pairing dialogue provided by the app
+	// Pelagic should fix this on their side if they want their customers to be able to use Subsurface
+	//{"Apeks",    "DSX",                 DC_FAMILY_PELAGIC_I330R, 0x4741, DC_TRANSPORT_BLE, dc_filter_oceanic},
+	//{"Aqualung", "i330R",               DC_FAMILY_PELAGIC_I330R, 0x4744, DC_TRANSPORT_BLE, dc_filter_oceanic},
 	/* Mares Nemo */
 	{"Mares", "Nemo",         DC_FAMILY_MARES_NEMO, 0, DC_TRANSPORT_SERIAL, NULL},
 	{"Mares", "Nemo Steel",   DC_FAMILY_MARES_NEMO, 0, DC_TRANSPORT_SERIAL, NULL},
