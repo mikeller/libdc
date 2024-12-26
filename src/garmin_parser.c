@@ -617,8 +617,23 @@ DECLARE_FIELD(RECORD, rmv, UINT16) { }			// 100 * l/min
 DECLARE_FIELD(RECORD, ascent_rate, SINT32) { }		// mm/s (negative is down)
 
 // DEVICE_SETTINGS
-DECLARE_FIELD(DEVICE_SETTINGS, utc_offset, UINT32) { garmin->dive.utc_offset = (SINT32) data; }	// wrong type in FIT
-DECLARE_FIELD(DEVICE_SETTINGS, time_offset, UINT32) { garmin->dive.time_offset = (SINT32) data; }	// wrong type in FIT
+DECLARE_FIELD(DEVICE_SETTINGS, utc_offset, UINT32)
+{
+	garmin->dive.utc_offset = (SINT32) data;	// wrong type in FIT
+}
+DECLARE_FIELD(DEVICE_SETTINGS, time_offset, UINT32)
+{
+	/*
+	 * Crazy FIT files have a zero time offset in DEVICE_SETTINGS,
+	 * but then have a local_timestamp in ACTIVITY and/or in the
+	 * TIME_CORRELATION messages.
+	 *
+	 * So I have no idea what this field means then.
+	 */
+	if (!data)
+		return;
+	garmin->dive.time_offset = (SINT32) data;	// wrong type in FIT
+}
 
 // DEVICE_INFO
 // collect the data and then use the record if it is for device_index 0
@@ -675,6 +690,19 @@ DECLARE_FIELD(SPORT, sub_sport, ENUM) {
 	default: val = DC_DIVEMODE_OC;
 	}
 	DC_ASSIGN_FIELD(garmin->cache, DIVEMODE, val);
+}
+
+/*
+ * What is the difference between 'system_timestamp' and the
+ * actual timestamp of the message itself? Who designs these
+ * crazy things? What is the meaning of it all? These are the
+ * kinds of unanswerable questions that keep me up at night.
+ */
+DECLARE_FIELD(TIMESTAMP_CORRELATION, system_timestamp, UINT32) { }
+DECLARE_FIELD(TIMESTAMP_CORRELATION, local_timestamp, UINT32)
+{
+	int time_offset = data - garmin->record_data.timestamp;
+	garmin->dive.time_offset = time_offset;
 }
 
 // DIVE_GAS - uses msg index
@@ -988,6 +1016,14 @@ DECLARE_MESG(RECORD) = {
 	}
 };
 
+DECLARE_MESG(TIMESTAMP_CORRELATION) = {
+	.maxfield = 6,
+	.field = {
+		SET_FIELD(TIMESTAMP_CORRELATION, 1, system_timestamp, UINT32),
+		SET_FIELD(TIMESTAMP_CORRELATION, 3, local_timestamp, UINT32),
+	}
+};
+
 DECLARE_MESG(DIVE_GAS) = {
 	.maxfield = 4,
 	.field = {
@@ -1180,6 +1216,8 @@ static const struct {
 	SET_MESG(141, WTF_141),
 
 	SET_MESG(147, SENSOR_PROFILE),
+
+	SET_MESG(162, TIMESTAMP_CORRELATION),
 
 	SET_MESG(206, FIELD_DESCRIPTION),
 
