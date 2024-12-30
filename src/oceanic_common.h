@@ -122,12 +122,14 @@ extern "C" {
 #define AMPHOSAIR2    0x4658
 #define BEACON        0x4742
 #define I470TC        0x4743
+#define I100V2        0x4745
 #define I200CV2       0x4749
 #define GEOAIR        0x474B
 
 // i330r
 #define DSX           0x4741
 #define I330R         0x4744
+#define I330R_C       0x474D
 
 #define PAGESIZE 0x10
 #define FPMAXSIZE 0x200

@@ -59,6 +59,7 @@ static int dc_filter_deepsix (dc_descriptor_t *descriptor, dc_transport_t transp
 static int dc_filter_deepblu (dc_descriptor_t *descriptor, dc_transport_t transport, const void *userdata);
 static int dc_filter_oceans (dc_descriptor_t *descriptor, dc_transport_t transport, const void *userdata);
 static int dc_filter_divesoft (dc_descriptor_t *descriptor, dc_transport_t transport, const void *userdata);
+static int dc_filter_cressi (dc_descriptor_t *descriptor, dc_transport_t transport, const void *userdata);
 
 // Not merged upstream yet
 static int dc_filter_garmin (dc_descriptor_t *descriptor, dc_transport_t transport, const void *userdata);
@@ -149,6 +150,7 @@ static const dc_descriptor_t g_descriptors[] = {
 	{"Uwatec",   "Galileo Terra",       DC_FAMILY_UWATEC_SMART, 0x11, DC_TRANSPORT_IRDA, dc_filter_uwatec},
 	{"Uwatec",   "Aladin Tec",          DC_FAMILY_UWATEC_SMART, 0x12, DC_TRANSPORT_IRDA, dc_filter_uwatec},
 	{"Uwatec",   "Aladin Prime",        DC_FAMILY_UWATEC_SMART, 0x12, DC_TRANSPORT_IRDA, dc_filter_uwatec},
+	{"Uwatec",   "Aladin One",          DC_FAMILY_UWATEC_SMART, 0x12, DC_TRANSPORT_IRDA, dc_filter_uwatec},
 	{"Uwatec",   "Aladin Tec 2G",       DC_FAMILY_UWATEC_SMART, 0x13, DC_TRANSPORT_IRDA, dc_filter_uwatec},
 	{"Uwatec",   "Aladin 2G",           DC_FAMILY_UWATEC_SMART, 0x13, DC_TRANSPORT_IRDA, dc_filter_uwatec},
 	{"Subgear",  "XP-10",               DC_FAMILY_UWATEC_SMART, 0x13, DC_TRANSPORT_IRDA, dc_filter_uwatec},
@@ -273,7 +275,8 @@ static const dc_descriptor_t g_descriptors[] = {
 	{"Sherwood", "Amphos Air 2.0",      DC_FAMILY_OCEANIC_ATOM2, 0x4658, DC_TRANSPORT_SERIAL, NULL},
 	{"Sherwood", "Beacon",              DC_FAMILY_OCEANIC_ATOM2, 0x4742, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
 	{"Aqualung", "i470TC",              DC_FAMILY_OCEANIC_ATOM2, 0x4743, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
-	{"Aqualung", "i200Cv2",             DC_FAMILY_OCEANIC_ATOM2, 0x4749, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
+	{"Aqualung", "i100",                DC_FAMILY_OCEANIC_ATOM2, 0x4745, DC_TRANSPORT_SERIAL, NULL},
+	{"Aqualung", "i200C",               DC_FAMILY_OCEANIC_ATOM2, 0x4749, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
 	{"Oceanic",  "Geo Air",             DC_FAMILY_OCEANIC_ATOM2, 0x474B, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_oceanic},
 	/* Pelagic I330R */
 	// The pairing sequence for these was intentionally broken by Pelagic Pressure Systems
@@ -281,6 +284,7 @@ static const dc_descriptor_t g_descriptors[] = {
 	// Pelagic should fix this on their side if they want their customers to be able to use Subsurface
 	//{"Apeks",    "DSX",                 DC_FAMILY_PELAGIC_I330R, 0x4741, DC_TRANSPORT_BLE, dc_filter_oceanic},
 	//{"Aqualung", "i330R",               DC_FAMILY_PELAGIC_I330R, 0x4744, DC_TRANSPORT_BLE, dc_filter_oceanic},
+	//{"Aqualung", "i330R Console",       DC_FAMILY_PELAGIC_I330R, 0x474D, DC_TRANSPORT_BLE, dc_filter_oceanic},
 	/* Mares Nemo */
 	{"Mares", "Nemo",         DC_FAMILY_MARES_NEMO, 0, DC_TRANSPORT_SERIAL, NULL},
 	{"Mares", "Nemo Steel",   DC_FAMILY_MARES_NEMO, 0, DC_TRANSPORT_SERIAL, NULL},
@@ -344,11 +348,13 @@ static const dc_descriptor_t g_descriptors[] = {
 	{"Cressi", "Newton",   DC_FAMILY_CRESSI_LEONARDO, 5, DC_TRANSPORT_SERIAL, NULL},
 	{"Cressi", "Drake",    DC_FAMILY_CRESSI_LEONARDO, 6, DC_TRANSPORT_SERIAL, NULL},
 	/* Cressi Goa */
-	{"Cressi", "Cartesio", DC_FAMILY_CRESSI_GOA, 1, DC_TRANSPORT_SERIAL, NULL},
-	{"Cressi", "Goa",      DC_FAMILY_CRESSI_GOA, 2, DC_TRANSPORT_SERIAL, NULL},
-	{"Cressi", "Donatello",    DC_FAMILY_CRESSI_GOA, 4, DC_TRANSPORT_SERIAL, NULL},
-	{"Cressi", "Michelangelo", DC_FAMILY_CRESSI_GOA, 5, DC_TRANSPORT_SERIAL, NULL},
-	{"Cressi", "Neon",     DC_FAMILY_CRESSI_GOA, 9, DC_TRANSPORT_SERIAL, NULL},
+	{"Cressi", "Cartesio", DC_FAMILY_CRESSI_GOA, 1, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
+	{"Cressi", "Goa",      DC_FAMILY_CRESSI_GOA, 2, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
+	{"Cressi", "Leonardo 2.0", DC_FAMILY_CRESSI_GOA, 3, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
+	{"Cressi", "Donatello",    DC_FAMILY_CRESSI_GOA, 4, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
+	{"Cressi", "Michelangelo", DC_FAMILY_CRESSI_GOA, 5, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
+	{"Cressi", "Neon",     DC_FAMILY_CRESSI_GOA, 9, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
+	{"Cressi", "Nepto",    DC_FAMILY_CRESSI_GOA, 10, DC_TRANSPORT_SERIAL | DC_TRANSPORT_BLE, dc_filter_cressi},
 	/* Zeagle N2iTiON3 */
 	{"Zeagle",    "N2iTiON3",   DC_FAMILY_ZEAGLE_N2ITION3, 0, DC_TRANSPORT_SERIAL, NULL},
 	{"Apeks",     "Quantum X",  DC_FAMILY_ZEAGLE_N2ITION3, 0, DC_TRANSPORT_SERIAL, NULL},
@@ -560,6 +566,31 @@ dc_match_number_with_prefix (const void *key, const void *value)
 }
 
 static int
+dc_match_hex_with_prefix (const void *key, const void *value)
+{
+	const char *str = (const char *) key;
+	const char *prefix = *(const char * const *) value;
+
+	size_t n = strlen (prefix);
+
+	if (strncmp (str, prefix, n) != 0) {
+		return 0;
+	}
+
+	while (str[n] != 0) {
+		const char c = str[n];
+		if ((c < '0' || c > '9') &&
+			(c < 'A' || c > 'F') &&
+			(c < 'a' || c > 'f')) {
+			return 0;
+		}
+		n++;
+	}
+
+	return 1;
+}
+
+static int
 dc_match_oceanic (const void *key, const void *value)
 {
 	unsigned int model = *(const unsigned int *) value;
@@ -573,6 +604,20 @@ dc_match_oceanic (const void *key, const void *value)
 	const char *p = prefix;
 
 	return dc_match_number_with_prefix (key, &p);
+}
+
+static int
+dc_match_cressi (const void *key, const void *value)
+{
+	unsigned int model = *(const unsigned int *) value;
+
+	char prefix[16] = {0};
+
+	dc_platform_snprintf(prefix, sizeof(prefix), "%u_", model);
+
+	const char *p = prefix;
+
+	return dc_match_hex_with_prefix (key, &p);
 }
 
 static int
@@ -777,6 +822,7 @@ dc_filter_oceanic (dc_descriptor_t *descriptor, dc_transport_t transport, const 
 		0x4744, // Aqualung i330R
 		0x4749, // Aqualung i200C (newer model)
 		0x474B, // Oceanic Geo Air
+		0x474D, // Aqualung i330R Console
 	};
 
 	if (transport == DC_TRANSPORT_BLE) {
@@ -871,6 +917,26 @@ dc_filter_divesoft (dc_descriptor_t *descriptor, dc_transport_t transport, const
 
 	if (transport == DC_TRANSPORT_BLE) {
 		return DC_FILTER_INTERNAL (userdata, bluetooth, 0, dc_match_prefix);
+	}
+
+	return 1;
+}
+
+static int
+dc_filter_cressi (dc_descriptor_t *descriptor, dc_transport_t transport, const void *userdata)
+{
+	static const unsigned int model[] = {
+		1,  // Cartesio
+		2,  // Goa
+		3,  // Leonardo 2.0
+		4,  // Donatello
+		5,  // Michelangelo
+		9,  // Neon
+		10, // Nepto
+	};
+
+	if (transport == DC_TRANSPORT_BLE) {
+		return DC_FILTER_INTERNAL (userdata, model, 0, dc_match_cressi);
 	}
 
 	return 1;
