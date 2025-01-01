@@ -129,7 +129,6 @@ typedef struct garmin_parser_t {
 		unsigned int setpoint_low_cbar, setpoint_high_cbar;
 		unsigned int setpoint_low_switch_depth_mm, setpoint_high_switch_depth_mm;
 		unsigned int setpoint_low_switch_mode, setpoint_high_switch_mode;
-		dc_usage_t current_gasmix_usage;
 	} dive;
 
 	// I count nine (!) different GPS fields Hmm.
@@ -238,22 +237,6 @@ static void garmin_event(struct garmin_parser_t *garmin,
 	case 57:
 		sample.gasmix = data;
 		garmin->callback(DC_SAMPLE_GASMIX, &sample, garmin->userdata);
-
-		dc_usage_t gasmix_usage = garmin->cache.GASMIX[data].usage;
-		if (gasmix_usage != garmin->dive.current_gasmix_usage) {
-			dc_sample_value_t sample2 = {0};
-			sample2.event.type = SAMPLE_EVENT_STRING;
-			if (gasmix_usage == DC_USAGE_DILUENT) {
-				sample2.event.name = "Switched to closed circuit";
-			} else {
-				sample2.event.name = "Switched to open circuit bailout";
-			}
-			sample2.event.flags = 2 << SAMPLE_FLAGS_SEVERITY_SHIFT;
-
-			garmin->callback(DC_SAMPLE_EVENT, &sample2, garmin->userdata);
-
-			garmin->dive.current_gasmix_usage = gasmix_usage;
-		}
 
 		return;
 	}
@@ -674,7 +657,6 @@ DECLARE_FIELD(ACTIVITY, event_group, UINT8) { }
 // SPORT
 DECLARE_FIELD(SPORT, sub_sport, ENUM) {
 	garmin->dive.sub_sport = (ENUM) data;
-	garmin->dive.current_gasmix_usage = DC_USAGE_OPEN_CIRCUIT;
 	dc_divemode_t val;
 	switch (data) {
 	case 55: val = DC_DIVEMODE_GAUGE;
@@ -684,7 +666,6 @@ DECLARE_FIELD(SPORT, sub_sport, ENUM) {
 		break;
 	case 63:
 		val = DC_DIVEMODE_CCR;
-		garmin->dive.current_gasmix_usage = DC_USAGE_DILUENT;
 
 		break;
 	default: val = DC_DIVEMODE_OC;

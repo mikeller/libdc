@@ -139,7 +139,6 @@ typedef struct hw_ostc_parser_t {
 	unsigned int initial_setpoint;
 	unsigned int initial_cns;
 	hw_ostc_gasmix_t gasmix[NGASMIXES];
-	unsigned int current_divemode_ccr;
 } hw_ostc_parser_t;
 
 static dc_status_t hw_ostc_parser_get_datetime (dc_parser_t *abstract, dc_datetime_t *datetime);
@@ -814,28 +813,6 @@ hw_ostc_parser_get_field (dc_parser_t *abstract, dc_field_type_t type, unsigned 
 	return DC_STATUS_SUCCESS;
 }
 
-
-static void hw_ostc_notify_bailout(hw_ostc_parser_t *parser, const unsigned char *data, unsigned int index, dc_sample_callback_t callback, void *userdata)
-{
-	if (parser->current_divemode_ccr != parser->gasmix[index].diluent) {
-		dc_sample_value_t sample = {
-			.event.type = SAMPLE_EVENT_STRING,
-			.event.flags = SAMPLE_FLAGS_SEVERITY_INFO,
-		};
-		if (parser->gasmix[index].diluent) {
-			sample.event.name = "Switched to closed circuit";
-		} else {
-			sample.event.name = "Switched to open circuit bailout";
-		}
-
-		if (callback) {
-			callback(DC_SAMPLE_EVENT, &sample, userdata);
-		}
-
-		parser->current_divemode_ccr = parser->gasmix[index].diluent;
-	}
-}
-
 static dc_status_t
 hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t callback, void *userdata)
 {
@@ -945,7 +922,6 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 
 	// Get the CCR mode.
 	unsigned int ccr = hw_ostc_is_ccr (divemode, version);
-	parser->current_divemode_ccr = ccr;
 
 	unsigned int time = 0;
 	unsigned int nsamples = 0;
@@ -991,7 +967,7 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 		offset += 2;
 
 		// Extended sample info.
-		unsigned int length =  data[offset] & 0x7F;
+		unsigned int length = data[offset] & 0x7F;
 		offset += 1;
 
 		// Check for buffer overflows.
@@ -1082,8 +1058,6 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 			sample.gasmix = idx;
 			if (callback) callback (DC_SAMPLE_GASMIX, &sample, userdata);
 
-			hw_ostc_notify_bailout(parser, data, idx, callback, userdata);
-
 			offset += 2;
 			length -= 2;
 		}
@@ -1108,8 +1082,6 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 			sample.gasmix = idx;
 			if (callback) callback (DC_SAMPLE_GASMIX, &sample, userdata);
 			tank = id - 1;
-
-			hw_ostc_notify_bailout(parser, data, idx, callback, userdata);
 
 			offset++;
 			length--;
@@ -1156,8 +1128,6 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 				sample.gasmix = idx;
 				if (callback) callback (DC_SAMPLE_GASMIX, &sample, userdata);
 
-				hw_ostc_notify_bailout(parser, data, idx, callback, userdata);
-
 				offset += 2;
 				length -= 2;
 			}
@@ -1178,7 +1148,8 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 						info[i].divisor = 0;
 						continue;
 					}
-					ERROR (abstract->context, "Buffer overflow detected!");
+
+					ERROR(abstract->context, "Buffer overflow detected!");
 					return DC_STATUS_DATAFORMAT;
 				}
 
@@ -1295,8 +1266,6 @@ hw_ostc_parser_internal_foreach (hw_ostc_parser_t *parser, dc_sample_callback_t 
 
 				sample.gasmix = idx;
 				if (callback) callback (DC_SAMPLE_GASMIX, &sample, userdata);
-
-				hw_ostc_notify_bailout(parser, data, idx, callback, userdata);
 
 				offset += 2;
 				length -= 2;
