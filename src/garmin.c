@@ -558,7 +558,6 @@ garmin_device_foreach (dc_device_t *abstract, dc_dive_callback_t callback, void 
 
 		// Reset the membuffer, read the data
 		dc_buffer_clear(file);
-		dc_buffer_append(file, name, FIT_NAME_SIZE);
 #ifdef HAVE_LIBMTP
 		if (device->use_mtp)
 			status = mtp_read_file(device, files.array[i].mtp_id, file);
