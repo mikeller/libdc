@@ -452,7 +452,7 @@ struct field_desc {
 	{ \
 		char fmtbuf[FMTSIZE]; \
 		if (strcmp(#type, base_type_info[base_type].type_name)) \
-			fprintf(stderr, "%s: %s should be %s\n", #name, #type, base_type_info[base_type].type_name); \
+			WARNING(g->base.context, "%s: %s should be %s\n", #name, #type, base_type_info[base_type].type_name); \
 		type val = type##_VALUE(g, p); \
 		if (val == type##_INVAL) return; \
 		type##_FORMAT(val, fmtbuf); \
@@ -1499,29 +1499,25 @@ traverse_data(struct garmin_parser_t *garmin)
 	memset(&garmin->record_data, 0, sizeof(garmin->record_data));
 	memset(garmin->type_desc, 0, sizeof(garmin->type_desc));
 
-	// The data starts with our filename fingerprint. Skip it.
-	if (len < FIT_NAME_SIZE)
-		return DC_STATUS_IO;
-
-	DEBUG(garmin->base.context, "file %.*s", FIT_NAME_SIZE, data);
-
-	data += FIT_NAME_SIZE;
-	len -= FIT_NAME_SIZE;
-
 	// The FIT header
-	if (len < 12)
+	if (len < 12) {
+		ERROR(garmin->base.context, " file too short for FIT header");
+
 		return DC_STATUS_IO;
+	}
 
 	hdrsize = data[0];
 	protocol = data[1];
 	profile = array_uint16_le(data+2);  // these two fields are always little endian
 	datasize = array_uint32_le(data+4);
 	if (memcmp(data+8, ".FIT", 4)) {
-		DEBUG(garmin->base.context, " missing .FIT marker");
+		ERROR(garmin->base.context, " missing .FIT marker");
+
 		return DC_STATUS_IO;
 	}
 	if (hdrsize < 12 || datasize > len || datasize + hdrsize + 2 > len) {
-		DEBUG(garmin->base.context, " inconsistent size information hdrsize %d datasize %d len %d", hdrsize, datasize, len);
+		ERROR(garmin->base.context, " inconsistent size information hdrsize %d datasize %d len %d", hdrsize, datasize, len);
+
 		return DC_STATUS_IO;
 	}
 	garmin->dive.protocol = protocol;
@@ -1563,8 +1559,11 @@ traverse_data(struct garmin_parser_t *garmin)
 			DEBUG(garmin->base.context, "Regular record for type %d", record);
 			len = traverse_regular(garmin, data, datasize, record, &time);
 		}
-		if (len <= 0 || len > datasize)
+		if (len <= 0 || len > datasize) {
+			ERROR(garmin->base.context, " traverse failed");
+
 			return DC_STATUS_IO;
+		}
 		data += len;
 		datasize -= len;
 
