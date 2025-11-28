@@ -76,6 +76,7 @@
 #define S_UPLOAD   0x73
 #define WRITE      0x77
 #define RESET      0x78
+#define HWINFO_WRITE 0x80
 #define S_INIT     0xAA
 #define INIT       0xBB
 #define EXIT       0xFF
@@ -1019,6 +1020,27 @@ hw_ostc3_device_customtext (dc_device_t *abstract, const char *text)
 	return DC_STATUS_SUCCESS;
 }
 
+dc_status_t hw_ostc3_device_hwinfo_write (dc_device_t *abstract, unsigned char hwinfo[52])
+{
+	hw_ostc3_device_t *device = (hw_ostc3_device_t *) abstract;
+
+	if (!ISINSTANCE (abstract))
+		return DC_STATUS_INVALIDARGS;
+
+	dc_status_t rc = hw_ostc3_device_init (device, SERVICE);
+	if (rc != DC_STATUS_SUCCESS)
+		return rc;
+
+	if (device->hardware == OSTC3)
+		return DC_STATUS_UNSUPPORTED;
+
+	rc = hw_ostc3_transfer(device, NULL, HWINFO_WRITE, hwinfo, 52, NULL, 0, NULL, NODELAY);
+	if (rc != DC_STATUS_SUCCESS)
+		return rc;
+
+	return DC_STATUS_SUCCESS;
+}
+
 dc_status_t
 hw_ostc3_device_config_read (dc_device_t *abstract, unsigned int config, unsigned char data[], unsigned int size)
 {
@@ -1641,32 +1663,45 @@ hw_ostc3_device_read (dc_device_t *abstract, unsigned int address, unsigned char
 	dc_status_t status = DC_STATUS_SUCCESS;
 	hw_ostc3_device_t *device = (hw_ostc3_device_t *) abstract;
 
-	if ((address % SZ_FIRMWARE_BLOCK != 0) ||
-		(size % SZ_FIRMWARE_BLOCK != 0)) {
-		ERROR (abstract->context, "Address or size not aligned to the page size!");
-		return DC_STATUS_INVALIDARGS;
-	}
-
 	// Make sure the device is in service mode.
 	status = hw_ostc3_device_init (device, SERVICE);
 	if (status != DC_STATUS_SUCCESS) {
 		return status;
 	}
 
-	if (device->hardware == OSTC4) {
-		return DC_STATUS_UNSUPPORTED;
-	}
+	if (device->hardware == OSTC3) {
+		if ((address % SZ_FIRMWARE_BLOCK != 0) ||
+			(size % SZ_FIRMWARE_BLOCK != 0)) {
+			ERROR (abstract->context, "Address or size not aligned to the page size!");
+			return DC_STATUS_INVALIDARGS;
+		}
 
-	unsigned int nbytes = 0;
-	while (nbytes < size) {
-		// Read a memory page.
-		status = hw_ostc3_firmware_block_read (device, address + nbytes, data + nbytes, SZ_FIRMWARE_BLOCK);
+		unsigned int nbytes = 0;
+		while (nbytes < size) {
+			// Read a memory page.
+			status = hw_ostc3_firmware_block_read (device, address + nbytes, data + nbytes, SZ_FIRMWARE_BLOCK);
+			if (status != DC_STATUS_SUCCESS) {
+				ERROR (abstract->context, "Failed to read block.");
+
+				return status;
+			}
+
+			nbytes += SZ_FIRMWARE_BLOCK;
+		}
+	} else {
+	       if (address % 0x100 != 0) {
+			ERROR(abstract->context, "Address not aligned to the page size (0x100)!");
+
+			return DC_STATUS_INVALIDARGS;
+		}
+
+		status = hw_ostc3_firmware_block_read(device, address >> 8, data, size);
 		if (status != DC_STATUS_SUCCESS) {
-			ERROR (abstract->context, "Failed to read block.");
+			ERROR(abstract->context, "Failed to read block.");
+
 			return status;
 		}
 
-		nbytes += SZ_FIRMWARE_BLOCK;
 	}
 
 	return DC_STATUS_SUCCESS;

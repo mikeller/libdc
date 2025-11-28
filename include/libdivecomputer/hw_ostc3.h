@@ -47,6 +47,8 @@ hw_ostc3_device_display (dc_device_t *device, const char *text);
 dc_status_t
 hw_ostc3_device_customtext (dc_device_t *device, const char *text);
 
+dc_status_t hw_ostc3_device_hwinfo_write (dc_device_t *abstract, unsigned char hwinfo[52]);
+
 dc_status_t
 hw_ostc3_device_config_read (dc_device_t *abstract, unsigned int config, unsigned char data[], unsigned int size);
 
