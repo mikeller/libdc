@@ -350,6 +350,11 @@ hw_ostc3_transfer (hw_ostc3_device_t *device,
 		}
 	}
 
+	// AI-generated (Claude)
+	// Flag to indicate that the ready byte was consumed as part of the
+	// profile read (see the early end-of-profile detection below).
+	unsigned int ready_consumed = 0;
+
 	if (output) {
 		if (cmd == DIVE) {
 			// Read the dive header.
@@ -371,10 +376,55 @@ hw_ostc3_transfer (hw_ostc3_device_t *device,
 			}
 
 			// Read the dive profile.
-			status = hw_ostc3_read (device, progress, output + RB_LOGBOOK_SIZE_FULL, length - RB_LOGBOOK_SIZE_FULL);
-			if (status != DC_STATUS_SUCCESS) {
-				ERROR (abstract->context, "Failed to receive the dive profile.");
-				return status;
+			// The profileLength field in the header may not match the
+			// actual number of bytes the device sends.  This can happen
+			// when the "small header" embedded at the start of the profile
+			// area in flash is stale (left over from a previous, longer
+			// dive recorded at the same flash address), and the main
+			// logbook header carries the same stale value so the firmware's
+			// own mismatch-detection does not fire.  The firmware then
+			// transmits the real (shorter) profile from flash followed by
+			// the FDFD end-of-profile marker and the ready byte in the same
+			// packet, while the header still advertises the old, larger
+			// length.  Waiting for the full advertised length would cause a
+			// timeout.
+			//
+			// Detect this by scanning each received chunk for the sequence
+			// FDFD + ready byte.  When found, stop reading and treat the
+			// data up to (but not including) the ready byte as the complete
+			// profile.  Over transports where the device sends exactly the
+			// advertised length (e.g. serial/Bluetooth Classic), the profile
+			// always ends with FDFD but the ready byte is never appended to
+			// the profile data, so the check is a no-op on those transports.
+			size_t nbytes = 0;
+			size_t profile_size = length - RB_LOGBOOK_SIZE_FULL;
+			while (nbytes < profile_size) {
+				size_t chunk = profile_size - nbytes;
+				if (chunk > 1024)
+					chunk = 1024;
+				size_t nread = 0;
+				status = dc_iostream_read (device->iostream,
+					output + RB_LOGBOOK_SIZE_FULL + nbytes, chunk, &nread);
+				if (status != DC_STATUS_SUCCESS && nread == 0) {
+					ERROR (abstract->context, "Failed to receive the dive profile.");
+					return status;
+				}
+				nbytes += nread;
+				if (progress) {
+					progress->current += nread;
+					device_event_emit ((dc_device_t *) device, DC_EVENT_PROGRESS, progress);
+				}
+				// Check whether the ready byte arrived immediately after
+				// the FDFD end-of-profile marker, which means the device
+				// sent fewer bytes than the header claimed.
+				if (nbytes >= 3 &&
+					output[RB_LOGBOOK_SIZE_FULL + nbytes - 3] == 0xFD &&
+					output[RB_LOGBOOK_SIZE_FULL + nbytes - 2] == 0xFD &&
+					output[RB_LOGBOOK_SIZE_FULL + nbytes - 1] == ready) {
+					length = RB_LOGBOOK_SIZE_FULL + nbytes - 1;
+					ready_consumed = 1;
+					break;
+				}
 			}
 
 			// Update and emit a progress event.
@@ -396,7 +446,7 @@ hw_ostc3_transfer (hw_ostc3_device_t *device,
 		dc_iostream_poll (device->iostream, delay);
 	}
 
-	if (cmd != EXIT) {
+	if (cmd != EXIT && !ready_consumed) {
 		// Read the ready byte.
 		unsigned char answer[1] = {0};
 		status = dc_iostream_read (device->iostream, answer, sizeof (answer), NULL);
