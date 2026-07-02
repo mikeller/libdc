@@ -59,7 +59,7 @@ Makefile.in
 
 /build
 
+/.vscode/
+
 # Artifact produced by the Subsurface MSVC build
 /contrib/msvc/x64/
-
-
