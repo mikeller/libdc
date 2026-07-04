@@ -72,7 +72,7 @@
     <EnableLibmtp Condition="'$(EnableLibmtp)'==''">false</EnableLibmtp>
     <LibmtpPreprocessor Condition="'$(EnableLibmtp)'=='true'">HAVE_LIBMTP;</LibmtpPreprocessor>
     <LibmtpIncludes Condition="'$(EnableLibmtp)'=='true'">$(VCPKG_ROOT)\installed\x64-windows\include;</LibmtpIncludes>
-    <LibmtpLibs Condition="'$(EnableLibmtp)'=='true'">libmtp.lib;</LibmtpLibs>
+    <LibmtpLibs Condition="'$(EnableLibmtp)'=='true'">libmtp.lib;ole32.lib;portabledeviceguids.lib;propsys.lib;</LibmtpLibs>
     <LibmtpLibDirs Condition="'$(EnableLibmtp)'=='true'">$(VCPKG_ROOT)\installed\x64-windows\lib;</LibmtpLibDirs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
