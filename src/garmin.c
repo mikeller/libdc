@@ -56,6 +56,7 @@
 
 #include "platform.h"
 #include "garmin.h"
+#include "garmin-models.h"
 #include "context-private.h"
 #include "device-private.h"
 #include "array.h"
@@ -82,32 +83,15 @@ typedef struct garmin_device_t {
 #endif
 } garmin_device_t;
 
-// Ids can be found at https://developer.garmin.com/connect-iq/device-reference/
-// (look for 'Part Number')
-
+#define GARMIN_MODEL(name, id, mtp_capable) {name, id, mtp_capable},
 const garmin_model_t garmin_models[] = {
-	{ "Descent™ G1 / G1 Solar", 4005, true },
-	{ "Descent™ G2", 4588, true },
-	{ "Descent™ Mk1", 2859, false },
-	{ "Descent™ Mk1 APAC", 2991, false },
-	{ "Descent™ Mk2(i)", 3258, true },
-	{ "Descent™ Mk2(i) APAC", 3702, true },
-	{ "Descent™ Mk2 S", 3542, true },
-	{ "Descent™ Mk2 S APAC", 3930, true },
-	{ "Descent™ Mk3(i) 43mm", 4222, true },
-	{ "Descent™ Mk3(i) 51mm", 4223, true },
-	{ "Descent™ X50i", 4518, true },
-	{ "fēnix® 8 43mm", 4534, true },
-	{ "fēnix® 8 47mm / 51mm / tactix® 8 47mm / 51mm / quatix® 8 47mm / 51mm APAC", 4536, true },
-	{ "fēnix® 8 47mm / 51mm / tactix® 8 47mm / 51mm / quatix® 8 47mm / 51mm", 4775, true },
-	{ "fēnix® 8 Pro 47mm / 51mm / MicroLED / quatix® 8 Pro 47mm / 51mm", 4631, true },
-	{ "fēnix® 8 Solar 47mm", 4532, true },
-	{ "fēnix® 8 Solar 51mm / tactix® 8 Solar 51mm APAC", 4533, true },
-	{ "fēnix® 8 Solar 51mm / tactix® 8 Solar 51mm", 4776, true },
+	GARMIN_MODEL_LIST(GARMIN_MODEL)
 	{ NULL, 0, false }
 };
+#undef GARMIN_MODEL
 
 // AI-generated (Claude)
+#ifdef HAVE_LIBMTP
 static const garmin_model_t *garmin_model_find(unsigned int id)
 {
 	unsigned int i;
@@ -125,6 +109,7 @@ static bool garmin_model_is_mtp_capable(unsigned int id)
 
 	return model && model->mtp_capable;
 }
+#endif
 
 static dc_status_t garmin_device_set_fingerprint (dc_device_t *abstract, const unsigned char data[], unsigned int size);
 static dc_status_t garmin_device_foreach (dc_device_t *abstract, dc_dive_callback_t callback, void *userdata);
