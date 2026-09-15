@@ -28,7 +28,6 @@ MANPAGES = \
 	dc_iterator_free.3 \
 	dc_iterator_next.3 \
 	dc_parser_destroy.3 \
-	dc_parser_get_device_info.3 \
 	dc_parser_get_datetime.3 \
 	dc_parser_get_field.3 \
 	dc_parser_new.3 \

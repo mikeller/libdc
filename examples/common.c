@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <ctype.h>
 
 #ifdef _WIN32
 #include <io.h>
@@ -218,37 +217,6 @@ dctool_transport_default (dc_descriptor_t *descriptor)
 	return DC_TRANSPORT_NONE;
 }
 
-// AI-generated (Claude)
-static int
-dctool_garmin_product_match (const char *name, const char *product)
-{
-	while (*name && *product) {
-		if ((unsigned char) product[0] == 0xE2 &&
-		    (unsigned char) product[1] == 0x84 &&
-		    ((unsigned char) product[2] == 0xA2 || (unsigned char) product[2] == 0xAE)) {
-			if ((unsigned char) name[0] == 0xE2 &&
-			    (unsigned char) name[1] == 0x84 &&
-			    (unsigned char) name[2] == (unsigned char) product[2])
-				name += 3;
-			product += 3;
-			continue;
-		}
-
-		if (tolower ((unsigned char) *name) != tolower ((unsigned char) *product))
-			return 0;
-
-		name++;
-		product++;
-	}
-
-	while ((unsigned char) product[0] == 0xE2 &&
-	       (unsigned char) product[1] == 0x84 &&
-	       ((unsigned char) product[2] == 0xA2 || (unsigned char) product[2] == 0xAE))
-		product += 3;
-
-	return *name == '\0' && *product == '\0';
-}
-
 void
 dctool_event_cb (dc_device_t *device, dc_event_type_t event, const void *data, void *userdata)
 {
@@ -307,15 +275,11 @@ dctool_descriptor_search (dc_descriptor_t **out, const char *name, dc_family_t f
 
 			size_t n = strlen (vendor);
 			if (strncasecmp (name, vendor, n) == 0 && name[n] == ' ' &&
-				(strcasecmp (name + n + 1, product) == 0 ||
-				 (strcasecmp (vendor, "Garmin") == 0 &&
-				  dctool_garmin_product_match (name + n + 1, product))))
+				strcasecmp (name + n + 1, product) == 0)
 			{
 				current = descriptor;
 				break;
-			} else if (strcasecmp (name, product) == 0 ||
-				   (strcasecmp (vendor, "Garmin") == 0 &&
-				    dctool_garmin_product_match (name, product))) {
+			} else if (strcasecmp (name, product) == 0) {
 				current = descriptor;
 				break;
 			}
